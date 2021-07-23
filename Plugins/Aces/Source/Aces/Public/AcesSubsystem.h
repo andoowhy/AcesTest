@@ -41,34 +41,27 @@ private:
 
 public:
 	UFUNCTION( BlueprintNativeEvent, Category = "Aces" )
-	void AddAcesSystemClasses();
+		void AddAcesSystemClasses();
 	virtual void AddAcesSystemClasses_Implementation();
 
 	bool HandleTicker( float DeltaTime );
 
 	template<class ... ComponentTypes, uint32 ... Indices>
-	FORCEINLINE void Invoke( TFunctionRef<void( ComponentTypes... )>& Func,
+	FORCEINLINE void Invoke( TFunctionRef<void( ComponentTypes*... )>& Func,
 							 TArray<TComponentSparseArray*, TFixedAllocator<sizeof...( ComponentTypes )>>& MatchingComponentArrays,
 							 uint32 Entity,
 							 TIntegerSequence<uint32, Indices...> )
 	{
-		Func( (ComponentTypes)MatchingComponentArrays[Indices]->GetComponentData( Entity )... );
+		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponentData( Entity )... );
 	};
 
 	template<class ... ComponentTypes>
-	void Each( TFunctionRef<void( ComponentTypes... )> Func )
+	void Each( TFunctionRef<void( ComponentTypes*... )> Func )
 	{
-		//auto test = TIsDerivedFrom< typename TRemovePointer<ComponentTypes>::Type, FComponent>::IsDerived;
-		/*static_assert(
-			TAnd<
-				TIsDerivedFrom
-					 ,
-					FComponent>::IsDerived ...
-			>::Value,
-			"One or more types is not an Aces Component type" );*/
+		static_assert( TAnd<TIsDerivedFrom<ComponentTypes, FComponent>... >::Value, "One or more types is not an Aces Component" );
 
 		TArray<TComponentSparseArray*, TFixedAllocator<sizeof...( ComponentTypes )>> MatchingComponentArrays;
-		for( auto ComponentScriptStruct : { TRemovePointer<ComponentTypes>::Type::StaticStruct()... } )
+		for( auto ComponentScriptStruct : { ComponentTypes::StaticStruct()... } )
 		{
 			MatchingComponentArrays.Add( &ComponentArrays[ComponentStructToIndex[ComponentScriptStruct]] );
 		}

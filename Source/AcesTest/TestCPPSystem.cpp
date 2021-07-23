@@ -9,7 +9,7 @@
 
 void UTestCPPSystem::Tick_Implementation( UAcesSubsystem* AcesSubsystem, float deltaTime )
 {
-	AcesSubsystem->Each<FLocalTransform*, FWorldTransform*>([&](auto LocalTransform, auto WorldTransform)
+	AcesSubsystem->Each<FLocalTransform, FWorldTransform>([&](auto* LocalTransform, auto* WorldTransform)
 	{
 
 	});

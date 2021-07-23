@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{EBB2783E-4498-A740-7595-BBA5B0B75BEF}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "AcesTest",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Aces"
+			]
+		}
+	]
+}

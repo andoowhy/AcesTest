@@ -19,6 +19,10 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "Kismet/KismetMathLibrary.h"
 
+#include "AcesBlueprintLibrary.h"
+#include "K2Node_MakeArray.h"
+#include "K2Node_CallFunction.h"
+
 #include "Aces/Public/AcesSubsystem.h"
 #include "Aces/Public/Component.h"
 
@@ -94,6 +98,16 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	Super::ExpandNode( CompilerContext, SourceGraph );
 
 	const UEdGraphSchema_K2* Schema = CompilerContext.GetSchema();
+
+	UK2Node_MakeArray* MakeComponentScriptStructArray = CompilerContext.SpawnIntermediateNode<UK2Node_MakeArray>( this, SourceGraph );
+	MakeComponentScriptStructArray->AllocateDefaultPins();
+
+	/*UK2Node_CallFunction* CallFunction = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunction->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetMatchingComponentArrays ) ) );
+	CallFunction->AllocateDefaultPins();*/
+	
+	//bResult &= Schema->TryCreateConnection( CallFunction->GetReturnValuePin(), Branch->GetConditionPin() );
+	//bResult &= Schema->TryCreateConnection( CallFunction->FindPinChecked( TEXT( "Aces" ) ), FindPin(AcesPinName) );
 
 	BreakAllNodeLinks();
 }

@@ -61,3 +61,36 @@ bool UAcesSubsystem::HandleTicker( float DeltaTime )
 
 	return true;
 }
+
+TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrays( const TArray<UScriptStruct*> ComponentScriptStructs )
+{
+	TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles;
+	MatchingComponentArrayHandles.Reserve( ComponentScriptStructs.Num() );
+
+	for( UScriptStruct* ComponentScriptStruct : ComponentScriptStructs )
+	{
+		MatchingComponentArrayHandles.Add(
+			NewObject<UComponentSparseArrayHandle>()->Init(ComponentStructToIndex[ComponentScriptStruct])
+		);
+	}
+
+	return MatchingComponentArrayHandles;
+}
+
+UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHandle( const TArray<uint32> MatchingComponentArrayIndices )
+{
+	uint32 SmallestMatchingComponentArrayIndex = *Algo::MinElementBy( MatchingComponentArrayIndices, [&]( const auto& MatchingComponentArrayIndex )
+	{
+		return ComponentArrays[MatchingComponentArrayIndex].GetComponentNum();
+	} );
+
+	return NewObject<UComponentSparseArrayHandle>()->Init(SmallestMatchingComponentArrayIndex);
+}
+
+bool UAcesSubsystem::IsEntityInAllComponentArrays( const uint32 Entity, const TArray<uint32> MatchingComponentArrayIndices )
+{
+	return Algo::AllOf( MatchingComponentArrayIndices, [&]( const auto& MatchingComponentArrayIndex )
+	{
+		return ComponentArrays[MatchingComponentArrayIndex].IsValidEntity( Entity );
+	} );
+}

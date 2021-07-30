@@ -9,6 +9,8 @@
 #include "Algo/AllOf.h"
 #include "Algo/MinElement.h"
 
+#include "ComponentSparseArrayHandle.h"
+#include "ComponentSparseArrayIterHandle.h"
 #include "Component.h"
 #include "AcesQuery.h"
 #include "BaseSystem.h"
@@ -19,15 +21,16 @@ UCLASS( BlueprintType, Blueprintable, Category = "Aces" )
 class ACES_API UAcesSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+
 protected:
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Aces" )
-		TArray<TSubclassOf<UBaseSystem>> SystemClasses;
+	TArray<TSubclassOf<UBaseSystem>> SystemClasses;
 
 private:
 	TArray<TComponentSparseArray> ComponentArrays;
 
 	TArray<UScriptStruct*> IndexToComponentStruct;
-	TMap<UScriptStruct*, uint16> ComponentStructToIndex;
+	TMap<UScriptStruct*, uint32> ComponentStructToIndex;
 
 	TArray<UBaseSystem*> Systems;
 	FDelegateHandle TickDelegate;
@@ -41,20 +44,21 @@ private:
 
 public:
 	UFUNCTION( BlueprintNativeEvent, Category = "Aces" )
-		void AddAcesSystemClasses();
+	void AddAcesSystemClasses();
 	virtual void AddAcesSystemClasses_Implementation();
 
 	bool HandleTicker( float DeltaTime );
 
-	template<class ... ComponentTypes, uint32 ... Indices>
-	FORCEINLINE void Invoke( TFunctionRef<void( ComponentTypes*... )>& Func,
-							 TArray<TComponentSparseArray*, TFixedAllocator<sizeof...( ComponentTypes )>>& MatchingComponentArrays,
-							 uint32 Entity,
-							 TIntegerSequence<uint32, Indices...> )
-	{
-		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponentData( Entity )... );
-	};
+	//~ Begin Untyped/Blueprint API
+public:
+	UFUNCTION()
+	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrays( const TArray<UScriptStruct*> ComponentScriptStructs );
+	UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( const TArray<uint32> MatchingComponentArrayIndices );
+	bool IsEntityInAllComponentArrays(const uint32 Entity, const TArray<uint32> MatchingComponentArrayIndices);
+	//~ End Untyped/Blueprint API
 
+	//~ Begin Template API
+public:
 	template<class ... ComponentTypes>
 	void Each( TFunctionRef<void( ComponentTypes*... )> Func )
 	{
@@ -75,15 +79,32 @@ public:
 		{
 			uint32 Entity = It.GetEntity();
 
-			if( !Algo::AllOf( MatchingComponentArrays, [&]( const auto& ComponentArray )
-			{
-				return ComponentArray->IsValidEntity( Entity );
-			} ) )
+			if( !IsEntityInAllComponentArrays<sizeof...( ComponentTypes )>(Entity, MatchingComponentArrays) )
 			{
 				continue;
-			}
+			}  
 
-			Invoke( Func, MatchingComponentArrays, Entity, TMakeIntegerSequence < uint32, sizeof...( ComponentTypes ) >{} );
+			EachInvoke( Func, MatchingComponentArrays, Entity, TMakeIntegerSequence < uint32, sizeof...( ComponentTypes ) >{} );
 		}
 	};
+
+private:
+	template<uint32 ComponentTypeSize>
+	FORCEINLINE bool IsEntityInAllComponentArrays(uint32 Entity, TArray<TComponentSparseArray*, TFixedAllocator<ComponentTypeSize>>& MatchingComponentArrays)
+	{
+		return Algo::AllOf( MatchingComponentArrays, [&]( const auto& ComponentArray )
+		{
+			return ComponentArray->IsValidEntity( Entity );
+		} );
+	} 
+
+	template<class ... ComponentTypes, uint32 ... Indices>
+	FORCEINLINE void EachInvoke( TFunctionRef<void( ComponentTypes*... )>& Func,
+								 TArray<TComponentSparseArray*, TFixedAllocator<sizeof...( ComponentTypes )>>& MatchingComponentArrays,
+								 uint32 Entity,
+								 TIntegerSequence<uint32, Indices...> )
+	{
+		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponentData( Entity )... );
+	};
+	//~ End Template API
 };

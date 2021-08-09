@@ -58,5 +58,6 @@ class UK2Node_AcesQuery : public UK2Node, public IK2Node_AddPinInterface
 	UEdGraphPin* GetOppositePin( UEdGraphPin* pin ) const;
 	bool IsComponentClassInputPin( UEdGraphPin* Pin ) const;
 	bool IsComponentObjectOutputPin( UEdGraphPin* Pin ) const;
+	TArray<TTuple<UEdGraphPin*,UEdGraphPin*>> GetComponentInputOutputPins() const;
 	void ResetInputPin( UEdGraphPin* Pin ) const;
 };

@@ -9,13 +9,14 @@
 #include "Algo/AllOf.h"
 #include "Algo/MinElement.h"
 
-#include "ComponentSparseArrayHandle.h"
-#include "ComponentSparseArrayIterHandle.h"
 #include "Component.h"
 #include "AcesQuery.h"
 #include "BaseSystem.h"
 
 #include "AcesSubsystem.generated.h"
+
+class UComponentSparseArrayHandle;
+class UComponentSparseArrayIterHandle;
 
 UCLASS( BlueprintType, Blueprintable, Category = "Aces" )
 class ACES_API UAcesSubsystem : public UGameInstanceSubsystem
@@ -51,10 +52,9 @@ public:
 
 	//~ Begin Untyped/Blueprint API
 public:
-	UFUNCTION()
 	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrays( const TArray<UScriptStruct*> ComponentScriptStructs );
-	UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( const TArray<uint32> MatchingComponentArrayIndices );
-	bool IsEntityInAllComponentArrays(const uint32 Entity, const TArray<uint32> MatchingComponentArrayIndices);
+	UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays );
+
 	//~ End Untyped/Blueprint API
 
 	//~ Begin Template API

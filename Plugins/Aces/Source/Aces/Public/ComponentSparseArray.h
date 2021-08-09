@@ -24,7 +24,6 @@ public:
 		}
 
 		explicit operator bool() const { return ComponentSparseArray.DenseArray.IsValidIndex( Index ); }
-
 	private:
 		TComponentSparseArray& ComponentSparseArray;
 		uint32 Index;
@@ -44,7 +43,8 @@ public:
 
 	uint32 GetComponentNum()
 	{ 
-		return DenseArray.Num(); }
+		return DenseArray.Num();
+	}
 
 private:
 	uint32 MaxEntityCount;

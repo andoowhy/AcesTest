@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Component.h"
+#include "ComponentSparseArray.h"
 
 #include "ComponentSparseArrayHandle.generated.h"
 
@@ -11,12 +13,14 @@ class ACES_API UComponentSparseArrayHandle : public UObject
 {
 	GENERATED_BODY()
 public:
-	UComponentSparseArrayHandle* Init(uint32 InComponentArrayIndex)
+	UComponentSparseArrayHandle* Init(TComponentSparseArray* InComponentSparseArray)
 	{
-		ComponentArrayIndex = InComponentArrayIndex;
+		ComponentSparseArray = InComponentSparseArray;
 		return this;
 	}
 
+	FORCEINLINE TComponentSparseArray* GetComponentSparseArray() { return ComponentSparseArray; }
+
 private:
-	uint32 ComponentArrayIndex;
+	TComponentSparseArray* ComponentSparseArray;
 };

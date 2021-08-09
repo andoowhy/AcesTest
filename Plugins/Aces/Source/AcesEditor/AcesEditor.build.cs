@@ -16,6 +16,7 @@ public class AcesEditor : ModuleRules
 			"EditorStyle",
 			"GraphEditor",
 			"ToolMenus",
+			"KismetCompiler",
 			"UnrealEd",
 			"Aces"
 		});

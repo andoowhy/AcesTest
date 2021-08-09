@@ -19,12 +19,17 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "Kismet/KismetMathLibrary.h"
 
-#include "AcesBlueprintLibrary.h"
 #include "K2Node_MakeArray.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_AssignmentStatement.h"
+#include "K2Node_TemporaryVariable.h"
+#include "K2Node_IfThenElse.h"
 
+#include "AcesBlueprintLibrary.h"
 #include "Aces/Public/AcesSubsystem.h"
 #include "Aces/Public/Component.h"
+#include "ComponentSparseArray.h"
+#include "ComponentSparseArrayHandle.h"
 
 #define LOCTEXT_NAMESPACE "K2Node_AcesQuery"
 
@@ -98,16 +103,82 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	Super::ExpandNode( CompilerContext, SourceGraph );
 
 	const UEdGraphSchema_K2* Schema = CompilerContext.GetSchema();
+	check( Schema );
 
+	UEdGraphPin* AcesPin = FindPin( AcesPinName )->LinkedTo[0];
+	if (AcesPin == nullptr)
+	{
+		CompilerContext.MessageLog.Error(*NSLOCTEXT("K2Node", "AcesQuerey_MissingAcesConnectionError", "Missing Aces Connection in @@").ToString(), this);
+	}
+
+	TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> QueryComponentPins = GetComponentInputOutputPins();
+	
+	bool bResult = true;
+
+	// Make Nodes & Get Pins
 	UK2Node_MakeArray* MakeComponentScriptStructArray = CompilerContext.SpawnIntermediateNode<UK2Node_MakeArray>( this, SourceGraph );
 	MakeComponentScriptStructArray->AllocateDefaultPins();
 
-	/*UK2Node_CallFunction* CallFunction = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallFunction->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetMatchingComponentArrays ) ) );
-	CallFunction->AllocateDefaultPins();*/
+	UK2Node_CallFunction* CallGetMatchingComponentArrays = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallGetMatchingComponentArrays->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetMatchingComponentArrays ) ) );
+	CallGetMatchingComponentArrays->AllocateDefaultPins();
+
+	UK2Node_CallFunction* CallGetSmallestMatchingComponentArrayHandle = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallGetSmallestMatchingComponentArrayHandle->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetSmallestMatchingComponentArrayHandle ) ) );
+	CallGetSmallestMatchingComponentArrayHandle->AllocateDefaultPins();
+
+	UK2Node_CallFunction* CallIsValidEntity = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallIsValidEntity->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IsValidEntity ) ) );
+	CallIsValidEntity->AllocateDefaultPins();
+
+	UK2Node_CallFunction* CallGetComponentNum = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallGetComponentNum->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentNum ) ) );
+	CallGetComponentNum->AllocateDefaultPins();
+
+	UK2Node_CallFunction* CallGetComponentData = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallGetComponentData->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentData ) ) );
+	CallGetComponentData->AllocateDefaultPins();
+
+	UK2Node_TemporaryVariable* SmallestMatchingComponentLoopIndex = CompilerContext.SpawnIntermediateNode<UK2Node_TemporaryVariable>( this, SourceGraph );
+	SmallestMatchingComponentLoopIndex->VariableType.PinCategory = UEdGraphSchema_K2::PC_Int;
+	SmallestMatchingComponentLoopIndex->AllocateDefaultPins();
+
+	UK2Node_AssignmentStatement* SmallestMatchingComponentLoopIndexInitialize = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>( this, SourceGraph );
+	SmallestMatchingComponentLoopIndexInitialize->AllocateDefaultPins();
+	SmallestMatchingComponentLoopIndexInitialize->GetValuePin()->DefaultValue = TEXT( "0" );
+
+	UK2Node_IfThenElse* SmallestMatchingComponentLoopBranch = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>( this, SourceGraph );
+	SmallestMatchingComponentLoopBranch->AllocateDefaultPins();
+
+	UK2Node_CallFunction* Condition = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	Condition->SetFromFunction( UKismetMathLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UKismetMathLibrary, Less_IntInt ) ) );
+	Condition->AllocateDefaultPins();
+
+	UK2Node_CallFunction* Increment = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	Increment->SetFromFunction( UKismetMathLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UKismetMathLibrary, Add_IntInt ) ) );
+	Increment->AllocateDefaultPins();
+
+	// Copy Component Script Struct(s) from AcesQuery to new Array node
+	for( SIZE_T Index = 0; Index < QueryComponentPins.Num(); ++Index )
+	{
+		UEdGraphPin* InputPin = QueryComponentPins[Index].Get<0>();
+		check( InputPin );
+
+		MakeComponentScriptStructArray->AddInputPin();
+		// Add one to the index for the pin to set the default on to skip the output pin
+		MakeComponentScriptStructArray->Pins[Index + 1]->DefaultObject = InputPin->DefaultObject;
+	}
+
+	// Connect Nodes
+	bResult &= Schema->TryCreateConnection( AcesPin,                                        CallGetMatchingComponentArrays->FindPin( TEXT( "Aces" ) )                   );
+	bResult &= Schema->TryCreateConnection( MakeComponentScriptStructArray->GetOutputPin(), CallGetMatchingComponentArrays->FindPin( TEXT( "ComponentScriptStructs" ) ) );
+
+	bResult &= Schema->TryCreateConnection( AcesPin,                                             CallGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "Aces" ) )                    );
+	bResult &= Schema->TryCreateConnection( CallGetMatchingComponentArrays->GetReturnValuePin(), CallGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "MatchingComponentArrays" ) ) );
+
+	bResult &= Schema->TryCreateConnection( SmallestMatchingComponentLoopIndexInitialize->GetVariablePin(), SmallestMatchingComponentLoopIndex->GetVariablePin() );
 	
-	//bResult &= Schema->TryCreateConnection( CallFunction->GetReturnValuePin(), Branch->GetConditionPin() );
-	//bResult &= Schema->TryCreateConnection( CallFunction->FindPinChecked( TEXT( "Aces" ) ), FindPin(AcesPinName) );
+	bResult &= Schema->TryCreateConnection( SmallestMatchingComponentLoopIndexInitialize->GetVariablePin(), SmallestMatchingComponentLoopIndex->GetVariablePin() );
 
 	BreakAllNodeLinks();
 }
@@ -283,6 +354,22 @@ bool UK2Node_AcesQuery::IsComponentObjectOutputPin( UEdGraphPin* Pin ) const
 	return Pin->Direction == EEdGraphPinDirection::EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct;
 }
 
+TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> UK2Node_AcesQuery::GetComponentInputOutputPins() const
+{
+	TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> ComponentPins;
+	for( auto Pin : Pins )
+	{
+		if( !IsComponentClassInputPin( Pin ) )
+		{
+			continue;
+		}
+
+		ComponentPins.Add( MakeTuple( Pin, GetOppositePin( Pin ) ) );
+	}
+
+	return MoveTempIfPossible( ComponentPins );
+}
+
 void UK2Node_AcesQuery::ResetInputPin( UEdGraphPin* Pin ) const
 {
 	UEdGraphPin* ObjectPin = GetOppositePin( Pin );
@@ -292,22 +379,19 @@ void UK2Node_AcesQuery::ResetInputPin( UEdGraphPin* Pin ) const
 		{
 			ObjectPin->PinType.PinSubCategoryObject = Pin->DefaultObject;
 			ObjectPin->PinFriendlyName = FText::FromName( ObjectPin->PinType.PinSubCategoryObject->GetFName() );
-		}
-		else
+		} else
 		{
 			ObjectPin->PinType.PinSubCategoryObject = FComponent::StaticStruct();
 			ObjectPin->PinFriendlyName = LOCTEXT( "AcesCategory", "Component" );
 		}
-	}
-	else
+	} else
 	{
 		UEdGraphPin* ClassSource = Pin->LinkedTo[0];
-		if (ClassSource)
+		if( ClassSource )
 		{
 			ObjectPin->PinType.PinSubCategoryObject = Pin->DefaultObject;
 			ObjectPin->PinFriendlyName = FText::FromName( ObjectPin->PinType.PinSubCategoryObject->GetFName() );
-		}
-		else
+		} else
 		{
 			ObjectPin->PinType.PinSubCategoryObject = FComponent::StaticStruct();
 			ObjectPin->PinFriendlyName = LOCTEXT( "AcesCategory", "Component" );

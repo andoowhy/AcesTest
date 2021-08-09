@@ -2,7 +2,7 @@
 
 #include "AcesSubsystem.h"
 
-#include "LocalTransform.h"
+#include "ComponentSparseArrayHandle.h"
 
 void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 {
@@ -70,27 +70,17 @@ TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrays(
 	for( UScriptStruct* ComponentScriptStruct : ComponentScriptStructs )
 	{
 		MatchingComponentArrayHandles.Add(
-			NewObject<UComponentSparseArrayHandle>()->Init(ComponentStructToIndex[ComponentScriptStruct])
+			NewObject<UComponentSparseArrayHandle>()->Init(&ComponentArrays[ComponentStructToIndex[ComponentScriptStruct]])
 		);
 	}
 
 	return MatchingComponentArrayHandles;
 }
 
-UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHandle( const TArray<uint32> MatchingComponentArrayIndices )
+UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays )
 {
-	uint32 SmallestMatchingComponentArrayIndex = *Algo::MinElementBy( MatchingComponentArrayIndices, [&]( const auto& MatchingComponentArrayIndex )
+	return *Algo::MinElementBy( MatchingComponentArrays, [&]( const auto& MatchingComponentArray )
 	{
-		return ComponentArrays[MatchingComponentArrayIndex].GetComponentNum();
-	} );
-
-	return NewObject<UComponentSparseArrayHandle>()->Init(SmallestMatchingComponentArrayIndex);
-}
-
-bool UAcesSubsystem::IsEntityInAllComponentArrays( const uint32 Entity, const TArray<uint32> MatchingComponentArrayIndices )
-{
-	return Algo::AllOf( MatchingComponentArrayIndices, [&]( const auto& MatchingComponentArrayIndex )
-	{
-		return ComponentArrays[MatchingComponentArrayIndex].IsValidEntity( Entity );
+		return MatchingComponentArray->GetComponentSparseArray()->GetComponentNum();
 	} );
 }

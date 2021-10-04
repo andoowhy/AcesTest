@@ -52,8 +52,9 @@ public:
 
 	//~ Begin Untyped/Blueprint API
 public:
-	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrays( const TArray<UScriptStruct*> ComponentScriptStructs );
+	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs );
 	UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays );
+	bool IsEntityInAllComponentArrayHandles( const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles  );
 
 	//~ End Untyped/Blueprint API
 

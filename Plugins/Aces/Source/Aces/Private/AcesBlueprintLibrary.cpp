@@ -2,29 +2,46 @@
 
 #include "AcesBlueprintLibrary.h"
 
-FORCEINLINE TArray<UComponentSparseArrayHandle*> UAcesBlueprintLibrary::GetMatchingComponentArrays( UAcesSubsystem* const Aces, const TArray<UScriptStruct*> ComponentScriptStructs )
+FORCEINLINE TArray<UComponentSparseArrayHandle*> UAcesBlueprintLibrary::GetMatchingComponentArrayHandles( UAcesSubsystem* const Aces, const TArray<UScriptStruct*> ComponentScriptStructs )
 {
-	return Aces->GetMatchingComponentArrays( ComponentScriptStructs );
+	check( Aces );
+	return Aces->GetMatchingComponentArrayHandles( ComponentScriptStructs );
 }
 
-FORCEINLINE UComponentSparseArrayHandle* UAcesBlueprintLibrary::GetSmallestMatchingComponentArrayHandle( UAcesSubsystem* const Aces, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays )
+FORCEINLINE UComponentSparseArrayHandle* UAcesBlueprintLibrary::GetSmallestMatchingComponentArrayHandle( UAcesSubsystem* const Aces, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
-	return Aces->GetSmallestMatchingComponentArrayHandle( MatchingComponentArrays );
+	check( Aces );
+	return Aces->GetSmallestMatchingComponentArrayHandle( MatchingComponentArrayHandles );
 }
 
-FORCEINLINE bool UAcesBlueprintLibrary::IsValidEntity( const uint32 Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+FORCEINLINE bool UAcesBlueprintLibrary::IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
-	return ComponentSparseArrayHandle->GetComponentSparseArray()->IsValidEntity(Entity);
-}
-
-FORCEINLINE uint32 UAcesBlueprintLibrary::GetComponentNum( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
-{
-	return ComponentSparseArrayHandle->GetComponentSparseArray()->GetComponentNum();
+	check( Aces );
+	return Aces->IsEntityInAllComponentArrayHandles( Entity, MatchingComponentArrayHandles );
 }
 
 FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const uint32 Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
 {
+	check( ComponentSparseArrayHandle );
 	TComponentSparseArray* ComponentSparseArray = ComponentSparseArrayHandle->GetComponentSparseArray();
 	check( ComponentSparseArray->IsValidEntity( Entity ) );
 	return *static_cast<FComponent*>( ComponentSparseArray->GetComponentData( Entity ) );
+}
+
+FORCEINLINE void UAcesBlueprintLibrary::IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+{
+	check(ComponentSparseArrayHandle);
+	ComponentSparseArrayHandle->IterAdvance();
+}
+
+bool UAcesBlueprintLibrary::IterIsValid( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+{
+	check(ComponentSparseArrayHandle);
+	return ComponentSparseArrayHandle->IterIsValid();
+}
+
+uint32 UAcesBlueprintLibrary::IterGetEntity( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+{
+	check(ComponentSparseArrayHandle);
+	return ComponentSparseArrayHandle->IterGetEntity();
 }

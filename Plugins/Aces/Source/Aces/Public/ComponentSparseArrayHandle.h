@@ -13,14 +13,24 @@ class ACES_API UComponentSparseArrayHandle : public UObject
 {
 	GENERATED_BODY()
 public:
-	UComponentSparseArrayHandle* Init(TComponentSparseArray* InComponentSparseArray)
-	{
-		ComponentSparseArray = InComponentSparseArray;
-		return this;
-	}
+	UComponentSparseArrayHandle* Init(TComponentSparseArray* InComponentSparseArray);
 
-	FORCEINLINE TComponentSparseArray* GetComponentSparseArray() { return ComponentSparseArray; }
+	TComponentSparseArray* GetComponentSparseArray() { return ComponentSparseArray; }
+
+	FORCEINLINE FComponent& GetComponentData( const uint32 Entity );
+
+	UFUNCTION(meta = ( BlueprintInternalUseOnly ))
+	void IterAdvance();
+
+	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
+	bool IterIsValid();
+
+	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
+	uint32 IterGetEntity();
+
+	void BeginDestroy() override;
 
 private:
 	TComponentSparseArray* ComponentSparseArray;
+	TComponentSparseArray::TComponentSparseArrayIterator* Iterator;
 };

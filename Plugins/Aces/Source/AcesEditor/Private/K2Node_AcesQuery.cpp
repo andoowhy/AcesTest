@@ -24,6 +24,7 @@
 #include "K2Node_AssignmentStatement.h"
 #include "K2Node_TemporaryVariable.h"
 #include "K2Node_IfThenElse.h"
+#include "K2Node_ExecutionSequence.h"
 
 #include "AcesBlueprintLibrary.h"
 #include "Aces/Public/AcesSubsystem.h"
@@ -32,6 +33,13 @@
 #include "ComponentSparseArrayHandle.h"
 
 #define LOCTEXT_NAMESPACE "K2Node_AcesQuery"
+
+struct FQueryExpandNodeHelper
+{
+	FQueryExpandNodeHelper()
+	{
+	}
+};
 
 UK2Node_AcesQuery::UK2Node_AcesQuery( const FObjectInitializer& ObjectInitializer )
 	: Super( ObjectInitializer )
@@ -106,57 +114,55 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	check( Schema );
 
 	UEdGraphPin* AcesPin = FindPin( AcesPinName )->LinkedTo[0];
-	if (AcesPin == nullptr)
+	if( AcesPin == nullptr )
 	{
-		CompilerContext.MessageLog.Error(*NSLOCTEXT("K2Node", "AcesQuerey_MissingAcesConnectionError", "Missing Aces Connection in @@").ToString(), this);
+		CompilerContext.MessageLog.Error( *NSLOCTEXT( "K2Node", "AcesQuerey_MissingAcesConnectionError", "Missing Aces Connection in @@" ).ToString(), this );
 	}
 
 	TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> QueryComponentPins = GetComponentInputOutputPins();
-	
+
 	bool bResult = true;
 
-	// Make Nodes & Get Pins
+	// Make Nodes
 	UK2Node_MakeArray* MakeComponentScriptStructArray = CompilerContext.SpawnIntermediateNode<UK2Node_MakeArray>( this, SourceGraph );
 	MakeComponentScriptStructArray->AllocateDefaultPins();
 
-	UK2Node_CallFunction* CallGetMatchingComponentArrays = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallGetMatchingComponentArrays->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetMatchingComponentArrays ) ) );
-	CallGetMatchingComponentArrays->AllocateDefaultPins();
+	UK2Node_MakeArray* MakeComponentReferencesArray = CompilerContext.SpawnIntermediateNode<UK2Node_MakeArray>( this, SourceGraph );
+	MakeComponentReferencesArray->AllocateDefaultPins();
 
-	UK2Node_CallFunction* CallGetSmallestMatchingComponentArrayHandle = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallGetSmallestMatchingComponentArrayHandle->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetSmallestMatchingComponentArrayHandle ) ) );
-	CallGetSmallestMatchingComponentArrayHandle->AllocateDefaultPins();
+	UK2Node_CallFunction* CallFunctionGetMatchingComponentArrayHandles = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionGetMatchingComponentArrayHandles->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetMatchingComponentArrayHandles ) ) );
+	CallFunctionGetMatchingComponentArrayHandles->AllocateDefaultPins();
 
-	UK2Node_CallFunction* CallIsValidEntity = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallIsValidEntity->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IsValidEntity ) ) );
-	CallIsValidEntity->AllocateDefaultPins();
+	UK2Node_CallFunction* CallFunctionGetSmallestMatchingComponentArrayHandle = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionGetSmallestMatchingComponentArrayHandle->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetSmallestMatchingComponentArrayHandle ) ) );
+	CallFunctionGetSmallestMatchingComponentArrayHandle->AllocateDefaultPins();
 
-	UK2Node_CallFunction* CallGetComponentNum = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallGetComponentNum->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentNum ) ) );
-	CallGetComponentNum->AllocateDefaultPins();
+	UK2Node_CallFunction* CallFunctionIterIsValid = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionIterIsValid->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IterIsValid ) ) );
+	CallFunctionIterIsValid->AllocateDefaultPins();
 
-	UK2Node_CallFunction* CallGetComponentData = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	CallGetComponentData->SetFromFunction( UComponentSparseArrayHandle::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentData ) ) );
-	CallGetComponentData->AllocateDefaultPins();
+	UK2Node_CallFunction* CallFunctionIterAdvance = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionIterAdvance->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IterAdvance ) ) );
+	CallFunctionIterAdvance->AllocateDefaultPins();
 
-	UK2Node_TemporaryVariable* SmallestMatchingComponentLoopIndex = CompilerContext.SpawnIntermediateNode<UK2Node_TemporaryVariable>( this, SourceGraph );
-	SmallestMatchingComponentLoopIndex->VariableType.PinCategory = UEdGraphSchema_K2::PC_Int;
-	SmallestMatchingComponentLoopIndex->AllocateDefaultPins();
-
-	UK2Node_AssignmentStatement* SmallestMatchingComponentLoopIndexInitialize = CompilerContext.SpawnIntermediateNode<UK2Node_AssignmentStatement>( this, SourceGraph );
-	SmallestMatchingComponentLoopIndexInitialize->AllocateDefaultPins();
-	SmallestMatchingComponentLoopIndexInitialize->GetValuePin()->DefaultValue = TEXT( "0" );
+	UK2Node_CallFunction* CallFunctionIterGetEntity = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionIterGetEntity->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IterGetEntity ) ) );
+	CallFunctionIterGetEntity->AllocateDefaultPins();
+	
+	UK2Node_CallFunction* CallFunctionIsEntityInAllComponentArrayHandles= CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
+	CallFunctionIsEntityInAllComponentArrayHandles->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, IsEntityInAllComponentArrayHandles ) ) );
+	CallFunctionIsEntityInAllComponentArrayHandles->AllocateDefaultPins();
 
 	UK2Node_IfThenElse* SmallestMatchingComponentLoopBranch = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>( this, SourceGraph );
 	SmallestMatchingComponentLoopBranch->AllocateDefaultPins();
 
+	UK2Node_ExecutionSequence* IterExecutionSequence = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>( this, SourceGraph );
+	IterExecutionSequence->AllocateDefaultPins();
+
 	UK2Node_CallFunction* Condition = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
 	Condition->SetFromFunction( UKismetMathLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UKismetMathLibrary, Less_IntInt ) ) );
 	Condition->AllocateDefaultPins();
-
-	UK2Node_CallFunction* Increment = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-	Increment->SetFromFunction( UKismetMathLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UKismetMathLibrary, Add_IntInt ) ) );
-	Increment->AllocateDefaultPins();
 
 	// Copy Component Script Struct(s) from AcesQuery to new Array node
 	for( SIZE_T Index = 0; Index < QueryComponentPins.Num(); ++Index )
@@ -169,17 +175,28 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 		MakeComponentScriptStructArray->Pins[Index + 1]->DefaultObject = InputPin->DefaultObject;
 	}
 
-	// Connect Nodes
-	bResult &= Schema->TryCreateConnection( AcesPin,                                        CallGetMatchingComponentArrays->FindPin( TEXT( "Aces" ) )                   );
-	bResult &= Schema->TryCreateConnection( MakeComponentScriptStructArray->GetOutputPin(), CallGetMatchingComponentArrays->FindPin( TEXT( "ComponentScriptStructs" ) ) );
-
-	bResult &= Schema->TryCreateConnection( AcesPin,                                             CallGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "Aces" ) )                    );
-	bResult &= Schema->TryCreateConnection( CallGetMatchingComponentArrays->GetReturnValuePin(), CallGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "MatchingComponentArrays" ) ) );
-
-	bResult &= Schema->TryCreateConnection( SmallestMatchingComponentLoopIndexInitialize->GetVariablePin(), SmallestMatchingComponentLoopIndex->GetVariablePin() );
+	// Get matching component arrays
+	bResult &= Schema->TryCreateConnection( AcesPin,                                        CallFunctionGetMatchingComponentArrayHandles->FindPin( TEXT( "Aces" ) ) );
+	bResult &= Schema->TryCreateConnection( MakeComponentScriptStructArray->GetOutputPin(), CallFunctionGetMatchingComponentArrayHandles->FindPin( TEXT( "ComponentScriptStructs" ) ) );
 	
-	bResult &= Schema->TryCreateConnection( SmallestMatchingComponentLoopIndexInitialize->GetVariablePin(), SmallestMatchingComponentLoopIndex->GetVariablePin() );
+	// Get smallest component array
+	bResult &= Schema->TryCreateConnection( AcesPin,                                                           CallFunctionGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "Aces" ) ) );
+	bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), CallFunctionGetSmallestMatchingComponentArrayHandle->FindPin( TEXT( "MatchingComponentArrayHandles" ) ) );
 
+	// Iterator Is Valid
+	bResult &= Schema->TryCreateConnection( CallFunctionGetSmallestMatchingComponentArrayHandle->GetReturnValuePin(), CallFunctionIterIsValid->FindPin( TEXT( "ComponentSparseArrayHandle" ) ) );
+	
+	// Iterator Advance
+	bResult &= Schema->TryCreateConnection( CallFunctionGetSmallestMatchingComponentArrayHandle->GetReturnValuePin(), CallFunctionIterAdvance->FindPin( TEXT( "ComponentSparseArrayHandle" ) ) );
+	
+	// Iterator Get Entity
+	bResult &= Schema->TryCreateConnection( CallFunctionGetSmallestMatchingComponentArrayHandle->GetReturnValuePin(), CallFunctionIterGetEntity->FindPin( TEXT( "ComponentSparseArrayHandle" ) ) );
+	
+	// Is Entity In All ComponentArrayHandles
+	bResult &= Schema->TryCreateConnection( AcesPin,                                                           CallFunctionIsEntityInAllComponentArrayHandles->FindPin( TEXT( "Aces" ) ) );
+	bResult &= Schema->TryCreateConnection( CallFunctionIterGetEntity->GetReturnValuePin(),                    CallFunctionIsEntityInAllComponentArrayHandles->FindPin( TEXT( "Entity" ) ) );
+	bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), CallFunctionIsEntityInAllComponentArrayHandles->FindPin( TEXT( "MatchingComponentArrayHandles" ) ) );
+	
 	BreakAllNodeLinks();
 }
 

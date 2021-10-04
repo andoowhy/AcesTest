@@ -6,6 +6,8 @@
 
 class ACES_API TComponentSparseArray
 {
+	friend class UComponentSparseArrayHandle;
+
 public:
 	class TComponentSparseArrayIterator
 	{
@@ -13,7 +15,7 @@ public:
 		TComponentSparseArrayIterator( TComponentSparseArray& InComponentSparseArray ) : ComponentSparseArray( InComponentSparseArray ) { }
 
 		uint32 GetEntity() const
-		{
+		{ 
 			return ComponentSparseArray.DenseArray[Index];
 		}
 
@@ -23,7 +25,11 @@ public:
 			return *this;
 		}
 
-		explicit operator bool() const { return ComponentSparseArray.DenseArray.IsValidIndex( Index ); }
+		explicit operator bool() const
+		{
+			return ComponentSparseArray.DenseArray.IsValidIndex( Index );
+		}
+
 	private:
 		TComponentSparseArray& ComponentSparseArray;
 		uint32 Index;
@@ -32,19 +38,10 @@ public:
 	TComponentSparseArray() = delete;
 	TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxComponentCount, UScriptStruct* ComponentStruct );
 
-	TComponentSparseArrayIterator CreateIterator()
-	{
-		return TComponentSparseArrayIterator( *this );
-	}
-
+	TComponentSparseArrayIterator CreateIterator();
 	bool IsValidEntity( uint32 Entity ) const;
-
 	void* GetComponentData( uint32 Index );
-
-	uint32 GetComponentNum()
-	{ 
-		return DenseArray.Num();
-	}
+	uint32 GetComponentNum();
 
 private:
 	uint32 MaxEntityCount;

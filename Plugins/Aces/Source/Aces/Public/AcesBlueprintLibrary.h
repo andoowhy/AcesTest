@@ -20,17 +20,24 @@ class ACES_API UAcesBlueprintLibrary : public UBlueprintFunctionLibrary
 	friend class UK2Node_AcesQuery;
 
 	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
-	static TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrays( UAcesSubsystem* const Aces, const TArray<UScriptStruct*> ComponentScriptStructs );
+	static TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrayHandles( UAcesSubsystem* const Aces, const TArray<UScriptStruct*> ComponentScriptStructs );
 
 	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
-	static UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( UAcesSubsystem* const Aces, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays );
+	static UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( UAcesSubsystem* const Aces, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
 
 	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
-	static bool IsValidEntity( const uint32 Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
-
-	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
-	static uint32 GetComponentNum( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+	static bool IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
 
 	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
 	static FComponent& GetComponentData( const uint32 Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+
+	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
+	static void IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+
+	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
+	static bool IterIsValid( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+
+	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
+	static uint32 IterGetEntity( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+
 };

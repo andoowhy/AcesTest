@@ -36,6 +36,11 @@ TComponentSparseArray::TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxC
 	}
 }
 
+TComponentSparseArray::TComponentSparseArrayIterator TComponentSparseArray::CreateIterator()
+{
+	return TComponentSparseArrayIterator( *this );
+}
+
 bool TComponentSparseArray::IsValidEntity( uint32 Entity ) const
 {
 	return SparseArray.IsValidIndex( Entity ) && SparseArray[Entity] < SparseArrayEnd;
@@ -44,4 +49,9 @@ bool TComponentSparseArray::IsValidEntity( uint32 Entity ) const
 FORCEINLINE void* TComponentSparseArray::GetComponentData( uint32 Index )
 {
 	return (void*)( (uint8*)ComponentArray.GetData() + Index * ComponentStruct->GetStructureSize() );
+}
+
+uint32 TComponentSparseArray::GetComponentNum()
+{
+	return DenseArray.Num();
 }

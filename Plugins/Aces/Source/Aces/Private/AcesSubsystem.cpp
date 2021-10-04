@@ -62,7 +62,7 @@ bool UAcesSubsystem::HandleTicker( float DeltaTime )
 	return true;
 }
 
-TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrays( const TArray<UScriptStruct*> ComponentScriptStructs )
+TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs )
 {
 	TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles;
 	MatchingComponentArrayHandles.Reserve( ComponentScriptStructs.Num() );
@@ -77,10 +77,18 @@ TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrays(
 	return MatchingComponentArrayHandles;
 }
 
-UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays )
+UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
-	return *Algo::MinElementBy( MatchingComponentArrays, [&]( const auto& MatchingComponentArray )
+	return *Algo::MinElementBy( MatchingComponentArrayHandles, [&]( const auto& MatchingComponentArrayHandle )
 	{
-		return MatchingComponentArray->GetComponentSparseArray()->GetComponentNum();
+		return MatchingComponentArrayHandle->GetComponentSparseArray()->GetComponentNum();
+	} );
+}
+
+bool UAcesSubsystem::IsEntityInAllComponentArrayHandles(const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
+{
+	return Algo::AllOf( MatchingComponentArrayHandles, [&]( const auto& ComponentArrayHandle )
+	{
+		return ComponentArrayHandle->GetComponentSparseArray()->IsValidEntity( Entity );
 	} );
 }

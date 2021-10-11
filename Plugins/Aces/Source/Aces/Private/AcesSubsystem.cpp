@@ -19,15 +19,16 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 
 	IndexToComponentStruct.Reserve( ComponentStructs.Num() );
 	ComponentStructToIndex.Reserve( ComponentStructs.Num() );
-
-	for( UScriptStruct* ComponentStruct : ComponentStructs )
+	ComponentArrays.Reserve( ComponentStructs.Num() );
+	
+	for( SIZE_T Index = 0; Index < ComponentStructs.Num(); Index++ )
 	{
+		UScriptStruct* ComponentStruct = ComponentStructs[ Index ];
 		uint16 index = IndexToComponentStruct.Num();
 
 		IndexToComponentStruct.Add( ComponentStruct );
 		ComponentStructToIndex.Add( ComponentStruct, index );
-
-		ComponentArrays.Emplace( TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct ) );
+		ComponentArrays.Add( TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct ) );
 	}
 
 	TickDelegate = FTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );

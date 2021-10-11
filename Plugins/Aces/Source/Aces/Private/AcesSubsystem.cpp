@@ -2,6 +2,7 @@
 
 #include "AcesSubsystem.h"
 
+#include "EntityHandle.h"
 #include "ComponentSparseArrayHandle.h"
 
 void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
@@ -86,10 +87,10 @@ UComponentSparseArrayHandle* UAcesSubsystem::GetSmallestMatchingComponentArrayHa
 	} );
 }
 
-bool UAcesSubsystem::IsEntityInAllComponentArrayHandles(const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
+bool UAcesSubsystem::IsEntityInAllComponentArrayHandles(const FEntityHandle Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
 	return Algo::AllOf( MatchingComponentArrayHandles, [&]( const auto& ComponentArrayHandle )
 	{
-		return ComponentArrayHandle->GetComponentSparseArray()->IsValidEntity( Entity );
+		return ComponentArrayHandle->GetComponentSparseArray()->IsValidEntity( Entity.Entity );
 	} );
 }

@@ -16,6 +16,7 @@
 #include "AcesSubsystem.generated.h"
 
 class UComponentSparseArrayHandle;
+struct FEntityHandle;
 class UComponentSparseArrayIterHandle;
 
 UCLASS( BlueprintType, Blueprintable, Category = "Aces" )
@@ -54,7 +55,7 @@ public:
 public:
 	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs );
 	UComponentSparseArrayHandle* GetSmallestMatchingComponentArrayHandle( const TArray<UComponentSparseArrayHandle*> MatchingComponentArrays );
-	bool IsEntityInAllComponentArrayHandles( const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles  );
+	bool IsEntityInAllComponentArrayHandles( const FEntityHandle Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles  );
 
 	//~ End Untyped/Blueprint API
 

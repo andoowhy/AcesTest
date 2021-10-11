@@ -14,18 +14,18 @@ FORCEINLINE UComponentSparseArrayHandle* UAcesBlueprintLibrary::GetSmallestMatch
 	return Aces->GetSmallestMatchingComponentArrayHandle( MatchingComponentArrayHandles );
 }
 
-FORCEINLINE bool UAcesBlueprintLibrary::IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const uint32 Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
+FORCEINLINE bool UAcesBlueprintLibrary::IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const FEntityHandle Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
 	check( Aces );
 	return Aces->IsEntityInAllComponentArrayHandles( Entity, MatchingComponentArrayHandles );
 }
 
-FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const uint32 Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const FEntityHandle Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
 {
 	check( ComponentSparseArrayHandle );
 	TComponentSparseArray* ComponentSparseArray = ComponentSparseArrayHandle->GetComponentSparseArray();
-	check( ComponentSparseArray->IsValidEntity( Entity ) );
-	return *static_cast<FComponent*>( ComponentSparseArray->GetComponentData( Entity ) );
+	check( ComponentSparseArray->IsValidEntity( Entity.Entity ) );
+	return *static_cast<FComponent*>( ComponentSparseArray->GetComponentData( Entity.Entity ) );
 }
 
 FORCEINLINE void UAcesBlueprintLibrary::IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
@@ -40,7 +40,7 @@ bool UAcesBlueprintLibrary::IterIsValid( UComponentSparseArrayHandle* const Comp
 	return ComponentSparseArrayHandle->IterIsValid();
 }
 
-uint32 UAcesBlueprintLibrary::IterGetEntity( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+FEntityHandle UAcesBlueprintLibrary::IterGetEntity( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
 {
 	check(ComponentSparseArrayHandle);
 	return ComponentSparseArrayHandle->IterGetEntity();

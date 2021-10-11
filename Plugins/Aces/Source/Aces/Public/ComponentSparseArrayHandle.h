@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Component.h"
+#include "EntityHandle.h"
 #include "ComponentSparseArray.h"
 
 #include "ComponentSparseArrayHandle.generated.h"
@@ -17,7 +18,7 @@ public:
 
 	TComponentSparseArray* GetComponentSparseArray() { return ComponentSparseArray; }
 
-	FORCEINLINE FComponent& GetComponentData( const uint32 Entity );
+	FORCEINLINE FComponent& GetComponentData( const FEntityHandle Entity );
 
 	UFUNCTION(meta = ( BlueprintInternalUseOnly ))
 	void IterAdvance();
@@ -26,7 +27,7 @@ public:
 	bool IterIsValid();
 
 	UFUNCTION( meta = ( BlueprintInternalUseOnly ) )
-	uint32 IterGetEntity();
+	FEntityHandle IterGetEntity();
 
 	void BeginDestroy() override;
 

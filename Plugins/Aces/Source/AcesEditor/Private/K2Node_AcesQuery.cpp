@@ -226,7 +226,7 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 		check( OutputPin );
 		
 		// Get Array Item
-		GetArrayItem->GetIndexPin()->DefaultValue = FString::Printf(TEXT("%lu"), Index);
+		GetArrayItem->GetIndexPin()->DefaultValue = FString::FromInt(Index);
 		bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), GetArrayItem->GetTargetArrayPin());
 
 		// Get Component Data

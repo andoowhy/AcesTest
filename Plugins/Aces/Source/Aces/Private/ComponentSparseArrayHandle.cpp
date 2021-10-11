@@ -40,7 +40,9 @@ FEntityHandle UComponentSparseArrayHandle::IterGetEntity()
 
 void UComponentSparseArrayHandle::BeginDestroy()
 {
-	check( Iterator );
-	delete Iterator;
+	if( Iterator )
+	{
+		delete Iterator;
+	}
 	Super::BeginDestroy();
 }

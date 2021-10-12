@@ -358,7 +358,7 @@ void UK2Node_AcesQuery::RemoveInputPin( UEdGraphPin* pin )
 
 	removePinLambda( oppositePin );
 	PinConnectionListChanged( oppositePin );
-	//SyncPinNames();
+
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified( GetBlueprint() );
 }
 
@@ -381,6 +381,43 @@ void UK2Node_AcesQuery::PinDefaultValueChanged( UEdGraphPin* Pin )
 	//RewireOldPinsToNewPins( OldClassPins, Pins, nullptr );
 	GetGraph()->NotifyGraphChanged();
 	FBlueprintEditorUtils::MarkBlueprintAsModified( GetBlueprint() );
+}
+
+void UK2Node_AcesQuery::ReallocatePinsDuringReconstruction( TArray<UEdGraphPin*>& OldPins )
+{
+	Super::AllocateDefaultPins();
+
+	CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Exec, TickPinName );
+	CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Object, UAcesSubsystem::StaticClass(), AcesPinName );
+	CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Exec, EachPinName );
+
+	for( SIZE_T i = 3, Group = 0; i < OldPins.Num(); i = i + 2, Group++ )
+	{
+		UEdGraphPin* OldInputPin = OldPins[i];
+		UEdGraphPin* OldOutputPin = OldPins[i + 1];
+
+		UEdGraphPin* NewInputPin = CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Struct, OldInputPin->PinName );
+		NewInputPin->DefaultObject = OldInputPin->DefaultObject;
+		NewInputPin->PinType.PinSubCategoryObject = OldInputPin->PinType.PinSubCategoryObject;
+
+		UEdGraphPin* NewOutputPin = CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Struct, OldOutputPin->PinName );
+		NewOutputPin->DefaultObject = OldOutputPin->DefaultObject;
+		NewOutputPin->PinType.PinSubCategoryObject = OldOutputPin->PinType.PinSubCategoryObject;
+	}
+}
+
+void UK2Node_AcesQuery::PostReconstructNode()
+{
+	Super::PostReconstructNode();
+
+	for( SIZE_T i = 3; i < Pins.Num(); i = i + 2 )
+	{
+		UEdGraphPin* InputPin = Pins[i];
+		UEdGraphPin* OutputPin = Pins[i + 1];
+
+		InputPin->PinFriendlyName = LOCTEXT( "AcesCategory", "Component Class" );
+		OutputPin->PinFriendlyName = FText::FromName( OutputPin->PinType.PinSubCategoryObject->GetFName() );
+	}
 }
 
 bool UK2Node_AcesQuery::CheckForErrors( FKismetCompilerContext& CompilerContext ) const
@@ -442,7 +479,7 @@ TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> UK2Node_AcesQuery::GetComponentInputO
 void UK2Node_AcesQuery::ResetInputPin( UEdGraphPin* Pin ) const
 {
 	UEdGraphPin* ObjectPin = GetOppositePin( Pin );
-	if (ObjectPin == nullptr )
+	if( ObjectPin == nullptr )
 	{
 		return;
 	}

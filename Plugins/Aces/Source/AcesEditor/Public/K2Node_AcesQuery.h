@@ -26,18 +26,14 @@ class UK2Node_AcesQuery : public UK2Node, public IK2Node_AddPinInterface
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle( ENodeTitleType::Type TitleType ) const override;
 	virtual void GetNodeContextMenuActions( class UToolMenu* menu, class UGraphNodeContextMenuContext* contex ) const override;
-	//virtual bool IncludeParentNodeContextMenu() const override { return true; }
 	virtual void PinDefaultValueChanged( UEdGraphPin* Pin ) override;
-	//virtual void PinTypeChanged( UEdGraphPin* Pin ) override;
-	//virtual FText GetTooltipText() const override;
-	//virtual FSlateIcon GetIconAndTint( FLinearColor& OutColor ) const override;
 	//~ End UEdGraphNode Interface.
 
 	//~ Begin UK2Node Interface.
+	void ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) override;
+	void PostReconstructNode() override;
 	virtual void ExpandNode( class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph ) override;
 	virtual void NotifyPinConnectionListChanged( UEdGraphPin* Pin ) override;
-	//virtual void PostReconstructNode() override;
-	//virtual bool IsConnectionDisallowed( const UEdGraphPin* MyPin, const UEdGraphPin* OtherPin, FString& OutReason ) const override;
 	virtual void GetMenuActions( FBlueprintActionDatabaseRegistrar& ActionRegistrar ) const override;
 	virtual FText GetMenuCategory() const override;
 	virtual bool IsNodePure() const override

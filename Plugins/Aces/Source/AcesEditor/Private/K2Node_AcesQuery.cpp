@@ -163,13 +163,18 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	UK2Node_ExecutionSequence* GetDataExecutionSequence = CompilerContext.SpawnIntermediateNode<UK2Node_ExecutionSequence>( this, SourceGraph );
 	GetDataExecutionSequence->AllocateDefaultPins();
 
+	// Add new Array node input pins (has one already)
+	for( SIZE_T Index = 0; Index < QueryComponentPins.Num() - 1; ++Index )
+	{
+		MakeComponentScriptStructArray->AddInputPin();
+	}
+
 	// Copy Component Script Struct(s) from AcesQuery to new Array node
 	for( SIZE_T Index = 0; Index < QueryComponentPins.Num(); ++Index )
 	{
 		UEdGraphPin* InputPin = QueryComponentPins[Index].Get<0>();
 		check( InputPin );
-
-		MakeComponentScriptStructArray->AddInputPin();
+		
 		// Add one to the index for the pin to set the default on to skip the output pin
 		MakeComponentScriptStructArray->Pins[Index + 1]->DefaultObject = InputPin->DefaultObject;
 	}
@@ -215,9 +220,6 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	{
 		GetDataExecutionSequence->AddInputPin();
 
-		UK2Node_GetArrayItem* GetArrayItem = CompilerContext.SpawnIntermediateNode<UK2Node_GetArrayItem>( this, SourceGraph );
-		GetArrayItem->AllocateDefaultPins();
-
 		UK2Node_CallFunction* CallFunctionGetComponentData = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
 		CallFunctionGetComponentData->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentData ) ) );
 		CallFunctionGetComponentData->AllocateDefaultPins();
@@ -225,14 +227,11 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 		UEdGraphPin* OutputPin = QueryComponentPins[Index].Get<1>();
 		check( OutputPin );
 		
-		// Get Array Item
-		GetArrayItem->GetIndexPin()->DefaultValue = FString::FromInt(Index);
-		bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), GetArrayItem->GetTargetArrayPin());
-
 		// Get Component Data
-		bResult &= Schema->TryCreateConnection( GetDataExecutionSequence->GetThenPinGivenIndex(Index), CallFunctionGetComponentData->GetExecPin() );
-		bResult &= Schema->TryCreateConnection( CallFunctionIterGetEntity->GetReturnValuePin(),        CallFunctionGetComponentData->FindPin( TEXT( "Entity" ) ) );
-		bResult &= Schema->TryCreateConnection( GetArrayItem->GetResultPin(),                          CallFunctionGetComponentData->FindPin( TEXT( "ComponentSparseArrayHandle" ) ) );
+		bResult &= Schema->TryCreateConnection( GetDataExecutionSequence->GetThenPinGivenIndex(Index),             CallFunctionGetComponentData->GetExecPin() );
+		bResult &= Schema->TryCreateConnection( CallFunctionIterGetEntity->GetReturnValuePin(),                    CallFunctionGetComponentData->FindPin( TEXT( "Entity" ) ) );
+		CallFunctionGetComponentData->FindPin( TEXT( "ComponentArrayIndex" ) )->DefaultValue = FString::FromInt( Index );
+		bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), CallFunctionGetComponentData->FindPin( TEXT( "MatchingComponentArrayHandles" ) ) );
 
 		// Output Component Reference
 		for( SIZE_T OutputPinLinkedToIndex = 0; OutputPinLinkedToIndex < OutputPin->LinkedTo.Num(); ++OutputPinLinkedToIndex )

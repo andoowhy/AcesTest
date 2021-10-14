@@ -71,6 +71,11 @@ TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrayHa
 
 	for( UScriptStruct* ComponentScriptStruct : ComponentScriptStructs )
 	{
+		if (ComponentScriptStruct == nullptr)
+		{
+			continue;
+		}
+
 		MatchingComponentArrayHandles.Add(
 			NewObject<UComponentSparseArrayHandle>()->Init(&ComponentArrays[ComponentStructToIndex[ComponentScriptStruct]])
 		);

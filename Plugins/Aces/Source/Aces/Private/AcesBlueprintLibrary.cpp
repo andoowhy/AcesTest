@@ -20,10 +20,11 @@ FORCEINLINE bool UAcesBlueprintLibrary::IsEntityInAllComponentArrayHandles( UAce
 	return Aces->IsEntityInAllComponentArrayHandles( Entity, MatchingComponentArrayHandles );
 }
 
-FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const FEntityHandle Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle )
+FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
 {
-	check( ComponentSparseArrayHandle );
-	TComponentSparseArray* ComponentSparseArray = ComponentSparseArrayHandle->GetComponentSparseArray();
+	check( MatchingComponentArrayHandles.IsValidIndex( ComponentArrayIndex ) );
+
+	TComponentSparseArray* ComponentSparseArray = MatchingComponentArrayHandles[ComponentArrayIndex]->GetComponentSparseArray();
 	check( ComponentSparseArray->IsValidEntity( Entity.Entity ) );
 	return *static_cast<FComponent*>( ComponentSparseArray->GetComponentData( Entity.Entity ) );
 }

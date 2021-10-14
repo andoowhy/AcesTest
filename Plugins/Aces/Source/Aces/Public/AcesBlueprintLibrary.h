@@ -30,7 +30,7 @@ class ACES_API UAcesBlueprintLibrary : public UBlueprintFunctionLibrary
 	static bool IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const FEntityHandle Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
 
 	UFUNCTION( BlueprintCallable, meta = ( BlueprintInternalUseOnly ) )
-	static FComponent& GetComponentData( const FEntityHandle Entity, UComponentSparseArrayHandle* const ComponentSparseArrayHandle );
+	static FComponent& GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
 
 	UFUNCTION( BlueprintCallable, meta = ( BlueprintInternalUseOnly ) )
 	static void IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );

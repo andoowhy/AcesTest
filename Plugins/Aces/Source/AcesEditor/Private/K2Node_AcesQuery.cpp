@@ -402,6 +402,7 @@ void UK2Node_AcesQuery::ReallocatePinsDuringReconstruction( TArray<UEdGraphPin*>
 		UEdGraphPin* NewOutputPin = CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Struct, OldOutputPin->PinName );
 		NewOutputPin->DefaultObject = OldOutputPin->DefaultObject;
 		NewOutputPin->PinType.PinSubCategoryObject = OldOutputPin->PinType.PinSubCategoryObject;
+		NewOutputPin->PinType.bIsReference = true;
 	}
 }
 

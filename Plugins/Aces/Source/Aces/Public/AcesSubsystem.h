@@ -118,7 +118,7 @@ private:
 								 uint32 Entity,
 								 TIntegerSequence<uint32, Indices...> )
 	{
-		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponentData( Entity )... );
+		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponent( Entity )... );
 	};
 	//~ End Template API
 };

@@ -20,13 +20,24 @@ FORCEINLINE bool UAcesBlueprintLibrary::IsEntityInAllComponentArrayHandles( UAce
 	return Aces->IsEntityInAllComponentArrayHandles( Entity, MatchingComponentArrayHandles );
 }
 
-FORCEINLINE FComponent& UAcesBlueprintLibrary::GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles )
+bool UAcesBlueprintLibrary::Generic_GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles, void* OutComponentPtr )
 {
 	check( MatchingComponentArrayHandles.IsValidIndex( ComponentArrayIndex ) );
 
 	TComponentSparseArray* ComponentSparseArray = MatchingComponentArrayHandles[ComponentArrayIndex]->GetComponentSparseArray();
 	check( ComponentSparseArray->IsValidEntity( Entity.Entity ) );
-	return *static_cast<FComponent*>( ComponentSparseArray->GetComponentData( Entity.Entity ) );
+
+	const UScriptStruct* ComponentStruct = ComponentSparseArray->GetComponentStruct();
+	OutComponentPtr = ComponentSparseArray->GetComponent( Entity.Entity );
+
+	return OutComponentPtr != nullptr;
+}
+
+FORCEINLINE bool UAcesBlueprintLibrary::GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles, FComponent& OutComponent )
+{
+	// We should never hit this!  stubs to avoid NoExport on the class.
+	check( 0 );
+	return false;
 }
 
 FORCEINLINE void UAcesBlueprintLibrary::IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle )

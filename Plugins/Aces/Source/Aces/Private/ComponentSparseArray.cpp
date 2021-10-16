@@ -44,7 +44,7 @@ TComponentSparseArray::TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxC
 
 TComponentSparseArray::~TComponentSparseArray()
 {
-	ComponentArray->Empty( 0, ComponentStruct->GetStructureSize() ); 
+	//ComponentArray->Empty( 0, ComponentStruct->GetStructureSize() ); 
 }
 
 void* TComponentSparseArray::Create( uint32 Entity )
@@ -58,7 +58,7 @@ void* TComponentSparseArray::Create( uint32 Entity )
 	SparseArray[Entity] = DenseArrayCount;
 	++DenseArrayCount;
 
-	return GetComponentData( DenseArrayCount - 1 );
+	return GetComponent( Entity );
 }
 
 void TComponentSparseArray::Destroy( uint32 Entity )
@@ -84,7 +84,17 @@ bool TComponentSparseArray::IsValidEntity( uint32 Entity ) const
 	return DenseIndex < DenseArrayTombstone && DenseArray[ DenseIndex ] == Entity;
 }
 
-FORCEINLINE void* TComponentSparseArray::GetComponentData( uint32 Index )
+UScriptStruct* TComponentSparseArray::GetComponentStruct() const
+{
+	return ComponentStruct;
+}
+
+void* TComponentSparseArray::GetComponent( uint32 Entity )
+{
+	return GetComponentData( SparseArray[Entity] );
+}
+
+void* TComponentSparseArray::GetComponentData( uint32 Index )
 {
 	return (void*)( (uint8*)ComponentArray->GetData() + Index * ComponentStruct->GetStructureSize() );
 }

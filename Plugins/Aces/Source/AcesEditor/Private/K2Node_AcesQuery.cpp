@@ -120,7 +120,7 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	check( EachPin );
 
 	TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> QueryComponentPins = GetComponentInputOutputPins();
-
+		
 	bool bResult = true;
 
 	// Make Nodes
@@ -180,10 +180,7 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	}
 
 	// Get matching component arrays
-	for( SIZE_T TickPinLinkedToIndex = 0; TickPinLinkedToIndex < TickPin->LinkedTo.Num(); ++TickPinLinkedToIndex )
-	{
-		bResult &= Schema->TryCreateConnection( TickPin->LinkedTo[TickPinLinkedToIndex], CallFunctionGetMatchingComponentArrayHandles->GetExecPin() );
-	}
+	CompilerContext.MovePinLinksToIntermediate( *TickPin, *CallFunctionGetMatchingComponentArrayHandles->GetExecPin() );
 	bResult &= Schema->TryCreateConnection( AcesPin,                                        CallFunctionGetMatchingComponentArrayHandles->FindPin( TEXT( "Aces" ) ) );
 	bResult &= Schema->TryCreateConnection( MakeComponentScriptStructArray->GetOutputPin(), CallFunctionGetMatchingComponentArrayHandles->FindPin( TEXT( "ComponentScriptStructs" ) ) );
 	
@@ -221,7 +218,7 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 		GetDataExecutionSequence->AddInputPin();
 
 		UK2Node_CallFunction* CallFunctionGetComponentData = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>( this, SourceGraph );
-		CallFunctionGetComponentData->SetFromFunction( UAcesBlueprintLibrary::StaticClass()->FindFunctionByName( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentData ) ) );
+		CallFunctionGetComponentData->FunctionReference.SetExternalMember( GET_FUNCTION_NAME_CHECKED( UAcesBlueprintLibrary, GetComponentData ), UAcesBlueprintLibrary::StaticClass() );
 		CallFunctionGetComponentData->AllocateDefaultPins();
 
 		UEdGraphPin* OutputPin = QueryComponentPins[Index].Get<1>();
@@ -234,19 +231,28 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 		bResult &= Schema->TryCreateConnection( CallFunctionGetMatchingComponentArrayHandles->GetReturnValuePin(), CallFunctionGetComponentData->FindPin( TEXT( "MatchingComponentArrayHandles" ) ) );
 
 		// Output Component Reference
+		UEdGraphPin* ComponentDataPin = CallFunctionGetComponentData->FindPin( TEXT( "OutComponent" ) );
+		ComponentDataPin->PinType = OutputPin->PinType;
+		ComponentDataPin->PinType.PinSubCategoryObject = OutputPin->PinType.PinSubCategoryObject;
+
 		for( SIZE_T OutputPinLinkedToIndex = 0; OutputPinLinkedToIndex < OutputPin->LinkedTo.Num(); ++OutputPinLinkedToIndex )
 		{
-			bResult &= Schema->TryCreateConnection( CallFunctionGetComponentData->GetReturnValuePin(), OutputPin->LinkedTo[OutputPinLinkedToIndex] );
+			bResult &= Schema->TryCreateConnection( ComponentDataPin, OutputPin->LinkedTo[OutputPinLinkedToIndex] );
 		}
 	}
 	GetDataExecutionSequence->AddInputPin();
-	bResult &= Schema->TryCreateConnection( GetDataExecutionSequence->GetThenPinGivenIndex(QueryComponentPins.Num()), EachPin );
+	CompilerContext.MovePinLinksToIntermediate( *EachPin, *GetDataExecutionSequence->GetThenPinGivenIndex( QueryComponentPins.Num() ) );
 
 	// Iterator Advance
 	GetDataExecutionSequence->AddInputPin();
 	bResult &= Schema->TryCreateConnection( GetDataExecutionSequence->GetThenPinGivenIndex(QueryComponentPins.Num() + 1), CallFunctionIterAdvance->GetExecPin() );
 	bResult &= Schema->TryCreateConnection( IterIsValidBranch->GetElsePin(),                                              CallFunctionIterAdvance->GetExecPin() );
 	bResult &= Schema->TryCreateConnection( CallFunctionGetSmallestMatchingComponentArrayHandle->GetReturnValuePin(),     CallFunctionIterAdvance->FindPin( TEXT( "ComponentSparseArrayHandle" ) ) );
+
+	if( !bResult )
+	{
+		CompilerContext.MessageLog.Error( *NSLOCTEXT( "K2Node", "AcesQuery_ExpandError", "Expand error in @@" ).ToString(), this );
+	}
 
 	BreakAllNodeLinks();
 }

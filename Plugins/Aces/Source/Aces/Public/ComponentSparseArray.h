@@ -45,6 +45,8 @@ public:
 
 	TComponentSparseArrayIterator CreateIterator();
 	bool IsValidEntity( uint32 Entity ) const;
+	UScriptStruct* GetComponentStruct() const;
+	void* GetComponent( uint32 Entity );
 	void* GetComponentData( uint32 Index );
 	uint32 GetComponentNum();
 

@@ -5,6 +5,9 @@
 #include "EntityHandle.h"
 #include "ComponentSparseArrayHandle.h"
 
+#include "LocalTransform.h"
+#include "WorldTransform.h"
+
 void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 {
 	// Register Component Classes and Initialize Component Arrays
@@ -29,10 +32,16 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 
 		IndexToComponentStruct.Add( ComponentStruct );
 		ComponentStructToIndex.Add( ComponentStruct, index );
-		ComponentArrays.Add( TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct ) );
+		TComponentSparseArray ComponentSparseArray = TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct );
+		ComponentArrays.Add( MoveTemp( ComponentSparseArray ) );
 	}
 
 	TickDelegate = FTSTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );
+
+	auto Entity = CreateEntity();
+	auto* LocalTransform = CreateComponent<FLocalTransform>( Entity );
+	auto* WorldTransform = CreateComponent<FWorldTransform>( Entity );
+	LocalTransform->LocalTransform.SetTranslation( FVector( 1.0, 2.0, 3.0 ) );
 
 	AddAcesSystemClasses();
 

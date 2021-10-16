@@ -29,8 +29,56 @@ class ACES_API UAcesBlueprintLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION( BlueprintCallable, meta = ( BlueprintInternalUseOnly ) )
 	static bool IsEntityInAllComponentArrayHandles( UAcesSubsystem* const Aces, const FEntityHandle Entity, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
 
-	UFUNCTION( BlueprintCallable, meta = ( BlueprintInternalUseOnly ) )
-	static FComponent& GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles );
+	UFUNCTION( BlueprintCallable, CustomThunk, meta = ( BlueprintInternalUseOnly="true", CustomStructureParam = "OutComponent") )
+	static bool GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles, FComponent& OutComponent );
+	
+	static bool Generic_GetComponentData( const FEntityHandle Entity, const int32 ComponentArrayIndex, const TArray<UComponentSparseArrayHandle*> MatchingComponentArrayHandles, void* OutComponentPtr );
+
+	/** Based on UAcesBlueprintLibrary::GetComponentData */
+	DECLARE_FUNCTION( execGetComponentData )
+	{
+		P_GET_STRUCT(FEntityHandle, Entity);
+		P_GET_PROPERTY(FIntProperty, ComponentArrayIndex);
+		P_GET_TARRAY(UComponentSparseArrayHandle*, MatchingComponentArrayHandles);
+
+		Stack.StepCompiledIn<FStructProperty>( NULL );
+		void* OutComponentPtr = Stack.MostRecentPropertyAddress;
+
+		P_FINISH;
+		bool bSuccess = false;
+
+		FStructProperty* StructProp = CastField<FStructProperty>(Stack.MostRecentProperty);
+		
+		UScriptStruct* OutputType = StructProp->Struct;
+		UScriptStruct* ComponentStruct = MatchingComponentArrayHandles[ComponentArrayIndex]->GetComponentSparseArray()->GetComponentStruct();
+
+		if( StructProp && OutComponentPtr )
+		{
+			const bool bCompatible =
+				( OutputType == ComponentStruct ) ||
+				( OutputType->IsChildOf( ComponentStruct ) && FStructUtils::TheSameLayout( OutputType, ComponentStruct ) );	
+
+			if( bCompatible )
+			{
+				P_NATIVE_BEGIN;
+				bSuccess = Generic_GetComponentData( Entity, ComponentArrayIndex, MatchingComponentArrayHandles, OutComponentPtr );
+				P_NATIVE_END;
+			} else
+			{
+				FBlueprintExceptionInfo ExceptionInfo(
+					EBlueprintExceptionType::AccessViolation,
+					NSLOCTEXT( "GetComponentData", "IncompatibleProperty", "Incompatible output parameter; the Component's type is not the same as the return type." )
+				);
+				FBlueprintCoreDelegates::ThrowScriptException( P_THIS, Stack, ExceptionInfo );
+			}
+		}
+		else
+		{
+			bSuccess = false;
+		}
+
+		*(bool*)RESULT_PARAM = bSuccess;
+	}
 
 	UFUNCTION( BlueprintCallable, meta = ( BlueprintInternalUseOnly ) )
 	static void IterAdvance( UComponentSparseArrayHandle* const ComponentSparseArrayHandle );

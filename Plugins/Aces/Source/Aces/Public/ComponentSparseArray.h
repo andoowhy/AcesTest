@@ -32,13 +32,16 @@ public:
 
 	private:
 		TComponentSparseArray& ComponentSparseArray;
-		uint32 Index;
+		uint32 Index = 0;
 	};	
 	
 	TComponentSparseArray() = delete;
 	TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxComponentCount, UScriptStruct* ComponentStruct );
 
 	~TComponentSparseArray();
+
+	void* Create( uint32 Entity );
+	void Destroy( uint32 Entity );
 
 	TComponentSparseArrayIterator CreateIterator();
 	bool IsValidEntity( uint32 Entity ) const;
@@ -50,10 +53,11 @@ private:
 	uint32 MaxComponentCount;
 	UScriptStruct* ComponentStruct;
 
-	uint32 SparseArrayEnd;
-	uint32 DenseArrayEnd;
+	uint32 SparseArrayTombstone;
+	uint32 DenseArrayTombstone;
 
 	TArray<uint32> SparseArray;
+	uint32 DenseArrayCount;
 	TArray<uint32> DenseArray;
 	TScriptArray<FDefaultAllocator>* ComponentArray;
 };

@@ -32,7 +32,7 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 		ComponentArrays.Add( TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct ) );
 	}
 
-	TickDelegate = FTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );
+	TickDelegate = FTSTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );
 
 	AddAcesSystemClasses();
 
@@ -47,7 +47,7 @@ void UAcesSubsystem::Deinitialize()
 {
 	ComponentArrays.Empty();
 
-	FTicker::GetCoreTicker().RemoveTicker( TickDelegate );
+	FTSTicker::GetCoreTicker().RemoveTicker( TickDelegate );
 }
 
 void UAcesSubsystem::AddAcesSystemClasses_Implementation()
@@ -62,6 +62,20 @@ bool UAcesSubsystem::HandleTicker( float DeltaTime )
 	}
 
 	return true;
+}
+
+uint32 UAcesSubsystem::CreateEntity()
+{
+	if( DestroyedEntities.Num() > 0 )
+	{	
+		return DestroyedEntities.Pop();
+	}
+	else
+	{
+		uint32 Entity = FirstFreeEntity;
+		FirstFreeEntity++;
+		return Entity;
+	}
 }
 
 TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs )

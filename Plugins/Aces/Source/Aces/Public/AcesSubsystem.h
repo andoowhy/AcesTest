@@ -29,15 +29,16 @@ protected:
 	TArray<TSubclassOf<UBaseSystem>> SystemClasses;
 
 private:
+	uint32 FirstFreeEntity;
+	TArray<uint32> DestroyedEntities;
+
 	TArray<TComponentSparseArray> ComponentArrays;
 
 	TArray<UScriptStruct*> IndexToComponentStruct;
 	TMap<UScriptStruct*, uint32> ComponentStructToIndex;
 
 	TArray<UBaseSystem*> Systems;
-	FDelegateHandle TickDelegate;
-
-	SIZE_T MaxComponent = 128;
+	FTSTicker::FDelegateHandle TickDelegate;
 
 	//~ Begin UGameInstanceSubsystem Interface.
 	virtual void Initialize( FSubsystemCollectionBase& Collection ) override;
@@ -48,6 +49,8 @@ public:
 	UFUNCTION( BlueprintNativeEvent, Category = "Aces" )
 	void AddAcesSystemClasses();
 	virtual void AddAcesSystemClasses_Implementation();
+
+	uint32 CreateEntity();
 
 	bool HandleTicker( float DeltaTime );
 
@@ -61,6 +64,15 @@ public:
 
 	//~ Begin Template API
 public:
+	template<class ComponentType>
+	ComponentType* CreateComponent( uint32 Entity )
+	{
+		static_assert( TIsDerivedFrom<ComponentType, FComponent>::Value, "Type is not an Aces Component" );
+
+		TComponentSparseArray* ComponentSparseArray = &ComponentArrays[ComponentStructToIndex[ComponentType::StaticStruct()]];
+		return (ComponentType*)ComponentSparseArray->Create( Entity );
+	}
+
 	template<class ... ComponentTypes>
 	void Each( TFunctionRef<void( ComponentTypes*... )> Func )
 	{

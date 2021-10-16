@@ -13,6 +13,6 @@ struct ACES_API FWorldTransform : public FComponent
 {
 	GENERATED_BODY()
 
-		UPROPERTY( BlueprintReadWrite, EditAnywhere )
-		FTransform worldTransform;
+	UPROPERTY( BlueprintReadWrite, EditAnywhere )
+	FTransform WorldTransform;
 };

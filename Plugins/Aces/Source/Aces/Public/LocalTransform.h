@@ -13,6 +13,6 @@ struct ACES_API FLocalTransform : public FComponent
 {
 	GENERATED_BODY()
 
-		UPROPERTY( BlueprintReadWrite, EditAnywhere )
-		FTransform localTransform;
+	UPROPERTY( BlueprintReadWrite, EditAnywhere )
+	FTransform LocalTransform;
 };

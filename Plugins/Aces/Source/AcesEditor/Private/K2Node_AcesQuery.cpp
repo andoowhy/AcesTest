@@ -43,6 +43,7 @@ UK2Node_AcesQuery::UK2Node_AcesQuery( const FObjectInitializer& ObjectInitialize
 const FName UK2Node_AcesQuery::AcesPinName( TEXT( "Aces" ) );
 const FName UK2Node_AcesQuery::TickPinName( TEXT( "Tick" ) );
 const FName UK2Node_AcesQuery::EachPinName( TEXT( "Each" ) );
+const FName UK2Node_AcesQuery::EntityPinName( TEXT( "Entity" ) );
 
 void UK2Node_AcesQuery::AllocateDefaultPins()
 {
@@ -50,6 +51,7 @@ void UK2Node_AcesQuery::AllocateDefaultPins()
 	CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Object, UAcesSubsystem::StaticClass(), AcesPinName );
 
 	CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Exec, EachPinName );
+	CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Struct, FEntityHandle::StaticStruct(), EntityPinName );
 
 	Super::AllocateDefaultPins();
 }
@@ -118,6 +120,9 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	
 	UEdGraphPin* EachPin = FindPin( EachPinName );
 	check( EachPin );
+
+	UEdGraphPin* EntityPin = FindPin( EntityPinName );
+	check( EntityPin );
 
 	TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> QueryComponentPins = GetComponentInputOutputPins();
 		
@@ -210,6 +215,12 @@ void UK2Node_AcesQuery::ExpandNode( class FKismetCompilerContext& CompilerContex
 	// Is Entity In All ComponentArrayHandles Branch
 	bResult &= Schema->TryCreateConnection( CallFunctionIsEntityInAllComponentArrayHandles->GetThenPin(),        IsEntityInAllComponentArrayHandlesBranch->GetExecPin() );
 	bResult &= Schema->TryCreateConnection( CallFunctionIsEntityInAllComponentArrayHandles->GetReturnValuePin(), IsEntityInAllComponentArrayHandlesBranch->GetConditionPin() );
+
+	// Output Entity Reference
+	for( SIZE_T EntityPinLinkedToIndex = 0; EntityPinLinkedToIndex < EntityPin->LinkedTo.Num(); ++EntityPinLinkedToIndex )
+	{
+		bResult &= Schema->TryCreateConnection( CallFunctionIterGetEntity->GetReturnValuePin(), EntityPin->LinkedTo[EntityPinLinkedToIndex] );
+	}
 
 	// Output Component References
 	bResult &= Schema->TryCreateConnection( IsEntityInAllComponentArrayHandlesBranch->GetThenPin(), GetDataExecutionSequence->GetExecPin() );
@@ -337,8 +348,6 @@ void UK2Node_AcesQuery::RemoveInputPin( UEdGraphPin* pin )
 	checkSlow( Pins.Contains( pin ) );
 
 	UEdGraphPin* oppositePin = GetOppositePin( pin );
-	/*check( oppositePin != nullptr );
-	check( oppositePin->ParentPin == nullptr );*/
 
 	FScopedTransaction Transaction( LOCTEXT( "AcesQuery_RemovePinTx", "AcesQuery_RemovePin" ) );
 	Modify();
@@ -383,7 +392,6 @@ void UK2Node_AcesQuery::PinDefaultValueChanged( UEdGraphPin* Pin )
 
 	ResetInputPin( Pin );
 
-	//RewireOldPinsToNewPins( OldClassPins, Pins, nullptr );
 	GetGraph()->NotifyGraphChanged();
 	FBlueprintEditorUtils::MarkBlueprintAsModified( GetBlueprint() );
 }
@@ -395,8 +403,9 @@ void UK2Node_AcesQuery::ReallocatePinsDuringReconstruction( TArray<UEdGraphPin*>
 	CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Exec, TickPinName );
 	CreatePin( EGPD_Input, UEdGraphSchema_K2::PC_Object, UAcesSubsystem::StaticClass(), AcesPinName );
 	CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Exec, EachPinName );
+	CreatePin( EGPD_Output, UEdGraphSchema_K2::PC_Struct, FEntityHandle::StaticStruct(), EntityPinName );
 
-	for( SIZE_T i = 3, Group = 0; i < OldPins.Num(); i = i + 2, Group++ )
+	for( SIZE_T i = 4, Group = 0; i < OldPins.Num(); i = i + 2, Group++ )
 	{
 		UEdGraphPin* OldInputPin = OldPins[i];
 		UEdGraphPin* OldOutputPin = OldPins[i + 1];
@@ -416,7 +425,7 @@ void UK2Node_AcesQuery::PostReconstructNode()
 {
 	Super::PostReconstructNode();
 
-	for( SIZE_T i = 3; i < Pins.Num(); i = i + 2 )
+	for( SIZE_T i = 4; i < Pins.Num(); i = i + 2 )
 	{
 		UEdGraphPin* InputPin = Pins[i];
 		UEdGraphPin* OutputPin = Pins[i + 1];
@@ -463,7 +472,7 @@ bool UK2Node_AcesQuery::IsComponentClassInputPin( UEdGraphPin* Pin ) const
 
 bool UK2Node_AcesQuery::IsComponentObjectOutputPin( UEdGraphPin* Pin ) const
 {
-	return Pin->Direction == EEdGraphPinDirection::EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct;
+	return Pin->Direction == EEdGraphPinDirection::EGPD_Output && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct && Pin->PinType.PinSubCategoryObject != FEntityHandle::StaticStruct();
 }
 
 TArray<TTuple<UEdGraphPin*, UEdGraphPin*>> UK2Node_AcesQuery::GetComponentInputOutputPins() const

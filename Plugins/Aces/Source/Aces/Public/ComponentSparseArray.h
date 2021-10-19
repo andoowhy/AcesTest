@@ -55,9 +55,6 @@ private:
 	uint32 MaxComponentCount;
 	UScriptStruct* ComponentStruct;
 
-	uint32 SparseArrayTombstone;
-	uint32 DenseArrayTombstone;
-
 	TArray<uint32> SparseArray;
 	uint32 DenseArrayCount;
 	TArray<uint32> DenseArray;

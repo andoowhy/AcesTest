@@ -7,7 +7,7 @@
 
 #include "BaseSystem.generated.h"
 
-UCLASS(abstract)
+UCLASS( abstract, BlueprintType, Blueprintable )
 class ACES_API UBaseSystem : public UObject
 {
 	GENERATED_BODY()

@@ -25,6 +25,9 @@ class ACES_API UAcesSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 protected:
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Aces", meta = ( ClampMin = "0") )
+	int32 MaxEntityCount = UINT16_MAX;
+
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Aces" )
 	TArray<TSubclassOf<UBaseSystem>> SystemClasses;
 
@@ -50,7 +53,14 @@ public:
 	void AddAcesSystemClasses();
 	virtual void AddAcesSystemClasses_Implementation();
 
+	UFUNCTION( BlueprintCallable, Category = "Aces", meta = ( DisplayName = "Create Entity" ) )
+	FEntityHandle CreateEntityHandle();
+
+	UFUNCTION( BlueprintCallable, Category = "Aces", meta = ( DisplayName = "Destroy Entity" ) )
+	void DestroyEntityHandle(FEntityHandle entity);
+
 	uint32 CreateEntity();
+	void DestroyEntity(uint32 Entity);
 
 	bool HandleTicker( float DeltaTime );
 
@@ -74,7 +84,7 @@ public:
 	}
 
 	template<class ... ComponentTypes>
-	void Each( TFunctionRef<void( ComponentTypes*... )> Func )
+	void Each( TFunctionRef<void( uint32, ComponentTypes*... )> Func )
 	{
 		static_assert( TAnd<TIsDerivedFrom<ComponentTypes, FComponent>... >::Value, "One or more types is not an Aces Component" );
 
@@ -113,12 +123,12 @@ private:
 	} 
 
 	template<class ... ComponentTypes, uint32 ... Indices>
-	FORCEINLINE void EachInvoke( TFunctionRef<void( ComponentTypes*... )>& Func,
+	FORCEINLINE void EachInvoke( TFunctionRef<void( uint32, ComponentTypes*... )>& Func,
 								 TArray<TComponentSparseArray*, TFixedAllocator<sizeof...( ComponentTypes )>>& MatchingComponentArrays,
 								 uint32 Entity,
 								 TIntegerSequence<uint32, Indices...> )
 	{
-		Func( (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponent( Entity )... );
+		Func( Entity, (ComponentTypes*)MatchingComponentArrays[Indices]->GetComponent( Entity )... );
 	};
 	//~ End Template API
 };

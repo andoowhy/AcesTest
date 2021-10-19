@@ -25,14 +25,14 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 	ComponentStructToIndex.Reserve( ComponentStructs.Num() );
 	ComponentArrays.Reserve( ComponentStructs.Num() );
 	
-	for( SIZE_T Index = 0; Index < ComponentStructs.Num(); Index++ )
+	for( SIZE_T Index = 0; Index < ComponentStructs.Num(); ++Index )
 	{
 		UScriptStruct* ComponentStruct = ComponentStructs[ Index ];
 		uint16 index = IndexToComponentStruct.Num();
 
 		IndexToComponentStruct.Add( ComponentStruct );
 		ComponentStructToIndex.Add( ComponentStruct, index );
-		TComponentSparseArray ComponentSparseArray = TComponentSparseArray( UINT16_MAX, UINT8_MAX, ComponentStruct );
+		TComponentSparseArray ComponentSparseArray = TComponentSparseArray( MaxEntityCount, UINT8_MAX, ComponentStruct );
 		ComponentArrays.Add( MoveTemp( ComponentSparseArray ) );
 	}
 
@@ -42,7 +42,7 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 	auto* LocalTransform = CreateComponent<FLocalTransform>( Entity );
 	auto* WorldTransform = CreateComponent<FWorldTransform>( Entity );
 	LocalTransform->LocalTransform.SetTranslation( FVector( 1.0, 2.0, 3.0 ) );
-
+	
 	AddAcesSystemClasses();
 
 	// Create all systems
@@ -73,6 +73,18 @@ bool UAcesSubsystem::HandleTicker( float DeltaTime )
 	return true;
 }
 
+FEntityHandle UAcesSubsystem::CreateEntityHandle()
+{
+	FEntityHandle EntityHandle;
+	EntityHandle.Entity = CreateEntity();
+	return EntityHandle;
+}
+
+void UAcesSubsystem::DestroyEntityHandle( FEntityHandle Entity )
+{
+	DestroyEntity(Entity.Entity);
+}
+
 uint32 UAcesSubsystem::CreateEntity()
 {
 	if( DestroyedEntities.Num() > 0 )
@@ -85,6 +97,18 @@ uint32 UAcesSubsystem::CreateEntity()
 		FirstFreeEntity++;
 		return Entity;
 	}
+}
+
+void UAcesSubsystem::DestroyEntity( uint32 Entity )
+{
+	check( Entity < unsigned(MaxEntityCount));
+
+	for( SIZE_T Index = 0; Index < ComponentArrays.Num(); ++Index )
+	{
+		ComponentArrays[Index].Destroy( Entity );
+	}
+
+	DestroyedEntities.Add(Entity);
 }
 
 TArray<UComponentSparseArrayHandle*> UAcesSubsystem::GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs )

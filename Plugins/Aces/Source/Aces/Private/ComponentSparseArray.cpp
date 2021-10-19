@@ -11,26 +11,13 @@ TComponentSparseArray::TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxC
 	this->MaxComponentCount = MaxComponentCount;
 	this->ComponentStruct = ComponentStruct;
 
-	this->SparseArrayTombstone = MaxEntityCount;
-	this->DenseArrayTombstone = MaxComponentCount;
-
-	DenseArrayCount = 0;
-
-	SparseArray = TArray<uint32>();
-	SparseArray.Reserve( MaxEntityCount );
-	for( SIZE_T Index = 0; Index < MaxEntityCount; ++Index )
-	{
-		SparseArray.Add( SparseArrayTombstone );
-	}
-
 	DenseArrayCount = 0u;
 
+	SparseArray = TArray<uint32>();
+	SparseArray.Init( MaxEntityCount, MaxEntityCount );
+
 	DenseArray = TArray<uint32>();
-	DenseArray.Reserve( MaxComponentCount );
-	for( SIZE_T Index = 0; Index < MaxComponentCount; ++Index )
-	{
-		DenseArray.Add( DenseArrayTombstone );
-	}
+	DenseArray.Init( MaxComponentCount, MaxComponentCount );
 
 	ComponentArray = new TScriptArray<FDefaultAllocator>();
 	ComponentArray->Add( MaxComponentCount, ComponentStruct->GetStructureSize() );
@@ -44,7 +31,6 @@ TComponentSparseArray::TComponentSparseArray( uint32 MaxEntityCount, uint32 MaxC
 
 TComponentSparseArray::~TComponentSparseArray()
 {
-	//ComponentArray->Empty( 0, ComponentStruct->GetStructureSize() ); 
 }
 
 void* TComponentSparseArray::Create( uint32 Entity )
@@ -56,16 +42,21 @@ void* TComponentSparseArray::Create( uint32 Entity )
 
 	DenseArray[DenseArrayCount] = Entity;
 	SparseArray[Entity] = DenseArrayCount;
-	++DenseArrayCount;
+	DenseArrayCount++;
 
 	return GetComponent( Entity );
 }
 
 void TComponentSparseArray::Destroy( uint32 Entity )
 {
+	if( !IsValidEntity( Entity ) )
+	{
+		return;
+	}
+
 	DenseArray[ SparseArray [ Entity ] ] = DenseArray[ DenseArrayCount - 1 ];
 	SparseArray[ DenseArray[ DenseArrayCount - 1 ] ] = SparseArray[ Entity ];
-	--DenseArrayCount;
+	DenseArrayCount--;
 }
 
 TComponentSparseArray::TComponentSparseArrayIterator TComponentSparseArray::CreateIterator()
@@ -81,7 +72,7 @@ bool TComponentSparseArray::IsValidEntity( uint32 Entity ) const
 	}
 
 	uint32 DenseIndex = SparseArray[ Entity ];
-	return DenseIndex < DenseArrayTombstone && DenseArray[ DenseIndex ] == Entity;
+	return DenseIndex < DenseArrayCount && DenseArray[ DenseIndex ] == Entity;
 }
 
 UScriptStruct* TComponentSparseArray::GetComponentStruct() const

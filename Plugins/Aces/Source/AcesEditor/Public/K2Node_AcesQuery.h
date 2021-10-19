@@ -21,6 +21,7 @@ class UK2Node_AcesQuery : public UK2Node, public IK2Node_AddPinInterface
 	static const FName AcesPinName;
 	static const FName TickPinName;
 	static const FName EachPinName;
+	static const FName EntityPinName;
 
 	//~ Begin UEdGraphNode Interface.
 	virtual void AllocateDefaultPins() override;

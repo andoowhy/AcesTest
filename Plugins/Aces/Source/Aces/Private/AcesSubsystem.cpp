@@ -36,7 +36,7 @@ void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 		ComponentArrays.Add( MoveTemp( ComponentSparseArray ) );
 	}
 
-	TickDelegate = FTSTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );
+	TickDelegate = FTicker::GetCoreTicker().AddTicker( FTickerDelegate::CreateUObject( this, &UAcesSubsystem::HandleTicker ) );
 
 	auto Entity = CreateEntity();
 	auto* LocalTransform = CreateComponent<FLocalTransform>( Entity );
@@ -56,7 +56,7 @@ void UAcesSubsystem::Deinitialize()
 {
 	ComponentArrays.Empty();
 
-	FTSTicker::GetCoreTicker().RemoveTicker( TickDelegate );
+	FTicker::GetCoreTicker().RemoveTicker( TickDelegate );
 }
 
 void UAcesSubsystem::AddAcesSystemClasses_Implementation()

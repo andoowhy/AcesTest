@@ -41,7 +41,7 @@ private:
 	TMap<UScriptStruct*, uint32> ComponentStructToIndex;
 
 	TArray<UBaseSystem*> Systems;
-	FTSTicker::FDelegateHandle TickDelegate;
+	FDelegateHandle TickDelegate;
 
 	//~ Begin UGameInstanceSubsystem Interface.
 	virtual void Initialize( FSubsystemCollectionBase& Collection ) override;

@@ -4,8 +4,8 @@
 
 #include "AcesSubsystem.h"
 
-#include "LocalTransform.h"
-#include "WorldTransform.h"
+#include "Components/LocalTransform.h"
+#include "Components/WorldTransform.h"
 
 void UTestCPPSystem::Tick_Implementation( UAcesSubsystem* AcesSubsystem, float deltaTime )
 {

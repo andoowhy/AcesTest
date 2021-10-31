@@ -5,8 +5,8 @@
 #include "EntityHandle.h"
 #include "ComponentSparseArrayHandle.h"
 
-#include "LocalTransform.h"
-#include "WorldTransform.h"
+#include "Components/LocalTransform.h"
+#include "Components/WorldTransform.h"
 
 void UAcesSubsystem::Initialize( FSubsystemCollectionBase& Collection )
 {

@@ -57,6 +57,7 @@ void UAcesSubsystem::Deinitialize()
 	ComponentArrays.Empty();
 
 	FTicker::GetCoreTicker().RemoveTicker( TickDelegate );
+	
 }
 
 void UAcesSubsystem::AddAcesSystemClasses_Implementation()
@@ -70,7 +71,18 @@ bool UAcesSubsystem::HandleTicker( float DeltaTime )
 		System->Tick( this, DeltaTime );
 	}
 
+	UpdateHelperActors();
+	
 	return true;
+}
+
+void UAcesSubsystem::UpdateHelperActors()
+{
+	// Update Unreal Helper Actors
+	Each<FLocalTransform, FAcesStaticMesh>([&]( auto Entity, auto* LocalTransform, auto* AcesStaticMesh )
+	{
+		AcesStaticMesh->HelperActor->SetActorTransform(LocalTransform->LocalTransform);
+	});
 }
 
 FEntityHandle UAcesSubsystem::CreateEntityHandle()

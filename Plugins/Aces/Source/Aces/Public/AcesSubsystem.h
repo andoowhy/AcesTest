@@ -12,6 +12,8 @@
 #include "Component.h"
 #include "AcesQuery.h"
 #include "BaseSystem.h"
+#include "Actors/AcesStaticMeshActor.h"
+#include "Components/AcesStaticMesh.h"
 
 #include "AcesSubsystem.generated.h"
 
@@ -64,6 +66,8 @@ public:
 
 	bool HandleTicker( float DeltaTime );
 
+	void UpdateHelperActors();
+	
 	//~ Begin Untyped/Blueprint API
 public:
 	TArray<UComponentSparseArrayHandle*> GetMatchingComponentArrayHandles( const TArray<UScriptStruct*> ComponentScriptStructs );
